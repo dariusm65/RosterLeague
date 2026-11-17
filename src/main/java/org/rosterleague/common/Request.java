@@ -23,6 +23,8 @@ public interface Request {
 
     void createTeamInLeague(TeamDetails teamDetails, String leagueId);
 
+    void createGame(String homeTeamId, String awayTeamId, int homeScore, int awayScore);
+
     void dropPlayer(String playerId, String teamId);
 
     List<PlayerDetails> getAllPlayers();
@@ -64,4 +66,10 @@ public interface Request {
     void removeTeam(String teamId);
 
     void clearAllEntities();
+
+    void processLeagueStandingsRewards(String leagueId);
+
+    void moveTeamsToLeague(String sourceLeagueId, String targetLeagueId);
+
+    void rewardTopThreeTeams(String leagueId);
 }

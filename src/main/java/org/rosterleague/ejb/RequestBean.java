@@ -147,7 +147,7 @@ public class RequestBean implements Request, Serializable {
         }
 
         for (Team team : teams) {
-            TeamDetails teamDetails = new TeamDetails(team.getId(), team.getName(), team.getCity());
+            TeamDetails teamDetails = new TeamDetails(team.getId(), team.getName(), team.getCity(), team.getPoints());
             detailsList.add(teamDetails);
         }
         return detailsList;
@@ -460,7 +460,7 @@ public class RequestBean implements Request, Serializable {
 
         try {
             Team team = em.find(Team.class, teamId);
-            teamDetails = new TeamDetails(team.getId(), team.getName(), team.getCity());
+            teamDetails = new TeamDetails(team.getId(), team.getName(), team.getCity(), team.getPoints());
         } catch (Exception ex) {
             throw new EJBException(ex);
         }
@@ -524,5 +524,107 @@ public class RequestBean implements Request, Serializable {
             detailsList.add(playerDetails);
         }
         return detailsList;
+    }
+
+    @Override
+    public void createGame(String homeTeamId, String awayTeamId, int homeScore, int awayScore) {
+        logger.info("createGame");
+        try {
+            Team homeTeam = em.find(Team.class, homeTeamId);
+            Team awayTeam = em.find(Team.class, awayTeamId);
+
+            Game game = new Game(homeTeam, awayTeam, homeScore, awayScore);
+            em.persist(game);
+
+            if (homeScore > awayScore) {
+                homeTeam.addPoints(3);
+                // awayTeam gets 0 points
+            } else if (homeScore < awayScore) {
+                awayTeam.addPoints(3);
+                // homeTeam gets 0 points
+            } else {
+                homeTeam.addPoints(1);
+                awayTeam.addPoints(1);
+            }
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+    }
+
+    @Override
+    public void processLeagueStandingsRewards(String leagueId) {
+        logger.info("processLeagueStandingsRewards");
+        try {
+            League league = em.find(League.class, leagueId);
+            if (league == null) return;
+
+            //sortare echipe descrescător după puncte
+            List<TeamDetails> standings = getTeamsOfLeague(leagueId);
+            standings.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
+
+            double[] bonuses = {30000.0, 20000.0, 10000.0};
+
+            for (int i = 0; i < Math.min(3, standings.size()); i++) {
+                Team team = em.find(Team.class, standings.get(i).getId());
+                if (team != null && team.getPlayers() != null) {
+                    for (Player player : team.getPlayers()) {
+                        player.setSalary(player.getSalary() + bonuses[i]);
+                    }
+                }
+            }
+
+            //ultima echipa eliminată
+            if (!standings.isEmpty()) {
+                Team lastTeam = em.find(Team.class, standings.get(standings.size() - 1).getId());
+                if (lastTeam != null) {
+                    league.dropTeam(lastTeam);
+                    lastTeam.setLeague(null);
+                }
+            }
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+    }
+
+    @Override
+    public void moveTeamsToLeague(String sourceLeagueId, String targetLeagueId) {
+        logger.info("moveTeamsToLeague");
+        try {
+            League sourceLeague = em.find(League.class, sourceLeagueId);
+            League targetLeague = em.find(League.class, targetLeagueId);
+            if (sourceLeague == null || targetLeague == null) return;
+
+            List<Team> remainingTeams = new ArrayList<>(sourceLeague.getTeams());
+            for (Team team : remainingTeams) {
+                sourceLeague.dropTeam(team);
+                team.setLeague(targetLeague);
+                team.setPoints(0);
+                targetLeague.addTeam(team);
+            }
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+    }
+
+    @Override
+    public void rewardTopThreeTeams(String leagueId) {
+        logger.info("rewardTopThreeTeams");
+        try {
+            List<TeamDetails> standings = getTeamsOfLeague(leagueId);
+            standings.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
+
+            double[] bonuses = {30000.0, 20000.0, 10000.0};
+
+            for (int i = 0; i < Math.min(3, standings.size()); i++) {
+                Team team = em.find(Team.class, standings.get(i).getId());
+                if (team != null && team.getPlayers() != null) {
+                    for (Player player : team.getPlayers()) {
+                        player.setSalary(player.getSalary() + bonuses[i]);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
     }
 }

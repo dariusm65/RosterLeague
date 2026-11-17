@@ -32,6 +32,7 @@ public class Team implements Serializable {
     private String id;
     private String name;
     private String city;
+    private int points;
     private Collection<Player> players;
     private League league;
     
@@ -43,6 +44,7 @@ public class Team implements Serializable {
         this.id = id;
         this.name = name;
         this.city = city;
+        this.points=0;
     }
 
     @Id
@@ -68,6 +70,18 @@ public class Team implements Serializable {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
+    }
+
+    public void addPoints(int points) {
+        this.points += points;
     }
 
     @ManyToMany

@@ -2,6 +2,8 @@ package org.rosterleague.servlet;
 
 import java.io.*;
 import java.util.List;
+import java.util.Random;
+
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.*;
@@ -19,14 +21,15 @@ public class MainServlet extends HttpServlet {
     PrintWriter printer;
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        ejbRequest.clearAllEntities();
-        insertInfo();
-
         printer = response.getWriter();
         response.setContentType("text/plain");
 
+        ejbRequest.clearAllEntities();
+        insertInfo();
+
         getSomeInfo();
         getMoreInfo();
+        runTournaments();
         removeInfo();
     }
 
@@ -38,21 +41,31 @@ public class MainServlet extends HttpServlet {
             ejbRequest.createLeague(new LeagueDetails("L3", "Foothills", "Soccer"));
             ejbRequest.createLeague(new LeagueDetails("L4", "Alpine", "Snowboarding"));
 
+            ejbRequest.createLeague(new LeagueDetails("L5", "Champions League", "Soccer"));
+            ejbRequest.createLeague(new LeagueDetails("L6", "UEFA Super Cup", "Soccer"));
+            ejbRequest.createLeague(new LeagueDetails("L7", "FIFA International Cup", "Soccer"));
+
             // Teams
-            ejbRequest.createTeamInLeague(new TeamDetails("T1", "Honey Bees", "Visalia"), "L1");
-            ejbRequest.createTeamInLeague(new TeamDetails("T2", "Gophers", "Manteca"), "L1");
-            ejbRequest.createTeamInLeague(new TeamDetails("T5", "Crows", "Orland"), "L1");
 
-            ejbRequest.createTeamInLeague(new TeamDetails("T3", "Deer", "Bodie"), "L2");
-            ejbRequest.createTeamInLeague(new TeamDetails("T4", "Trout", "Truckee"), "L2");
+            ejbRequest.createTeamInLeague(new TeamDetails("T1", "Honey Bees", "Visalia", 0), "L1");
+            ejbRequest.createTeamInLeague(new TeamDetails("T2", "Gophers", "Manteca", 0), "L1");
+            ejbRequest.createTeamInLeague(new TeamDetails("T5", "Crows", "Orland", 0), "L1");
 
-            ejbRequest.createTeamInLeague(new TeamDetails("T6", "Marmots", "Auburn"), "L3");
-            ejbRequest.createTeamInLeague(new TeamDetails("T7", "Bobcats", "Grass Valley"), "L3");
-            ejbRequest.createTeamInLeague(new TeamDetails("T8", "Beavers", "Placerville"), "L3");
+            ejbRequest.createTeamInLeague(new TeamDetails("T3", "Deer", "Bodie", 0), "L2");
+            ejbRequest.createTeamInLeague(new TeamDetails("T4", "Trout", "Truckee", 0), "L2");
 
-            ejbRequest.createTeamInLeague(new TeamDetails("T9", "Penguins", "Incline Village"), "L4");
-            ejbRequest.createTeamInLeague(new TeamDetails("T10", "Land Otters", "Tahoe City"), "L4");
+            ejbRequest.createTeamInLeague(new TeamDetails("T6", "Marmots", "Auburn", 0), "L3");
+            ejbRequest.createTeamInLeague(new TeamDetails("T7", "Bobcats", "Grass Valley", 0), "L3");
+            ejbRequest.createTeamInLeague(new TeamDetails("T8", "Beavers", "Placerville", 0), "L3");
 
+            ejbRequest.createTeamInLeague(new TeamDetails("T9", "Penguins", "Incline Village", 0), "L4");
+            ejbRequest.createTeamInLeague(new TeamDetails("T10", "Land Otters", "Tahoe City", 0), "L4");
+
+            ejbRequest.createTeamInLeague(new TeamDetails("T11", "Real Madrid", "Madrid", 0), "L5");
+            ejbRequest.createTeamInLeague(new TeamDetails("T12", "FC Barcelona", "Barcelona", 0), "L5");
+            ejbRequest.createTeamInLeague(new TeamDetails("T13", "Manchester United", "Manchester", 0), "L5");
+            ejbRequest.createTeamInLeague(new TeamDetails("T14", "Bayern Munchen", "Munich", 0), "L5");
+            ejbRequest.createTeamInLeague(new TeamDetails("T15", "Juventus", "Turin", 0), "L5");
             // Players, Team T1
             ejbRequest.createPlayer("P1", "Phil Jones", "goalkeeper", 100.00);
             ejbRequest.addPlayer("P1", "T1");
@@ -164,6 +177,24 @@ public class MainServlet extends HttpServlet {
             ejbRequest.addPlayer("P21", "T6");
             ejbRequest.addPlayer("P9", "T6");
             ejbRequest.addPlayer("P7", "T5");
+
+            //5 players for each new team (P1 to P25), salary between 1000 and 10000
+            String[] newTeamIds = {"T11", "T12", "T13", "T14", "T15"};
+            String[] positions = {"goalkeeper", "defender", "midfielder", "forward", "midfielder"};
+            Random random = new Random();
+
+            int playerNumber = 1;
+            for (String teamId : newTeamIds) {
+                for (int i = 0; i < 5; i++) {
+                    String playerId = "P" + (34 + playerNumber);
+                    String playerName = "P" + playerNumber;
+                    double salary = 1000 + random.nextInt(9001);
+
+                    ejbRequest.createPlayer(playerId, playerName, positions[i], salary);
+                    ejbRequest.addPlayer(playerId, teamId);
+                    playerNumber++;
+                }
+            }
 
         } catch (Exception ex) {
             printer.println("Caught an exception: " + ex.getClass() + " : " + ex.getMessage());
@@ -294,6 +325,73 @@ public class MainServlet extends HttpServlet {
         }
     }
 
+    private void runTournaments() {
+        try {
+            Random random = new Random();
+
+            playLeague("L5", "Champions League (L5)", random);
+            ejbRequest.moveTeamsToLeague("L5", "L6");
+
+            playLeague("L6", "UEFA Super Cup (L6)", random);
+            ejbRequest.moveTeamsToLeague("L6", "L7");
+
+            playLeague("L7", "FIFA International Cup (L7)", random);
+
+        } catch (Exception ex) {
+            printer.println("Caught an exception: " + ex.getClass() + " : " + ex.getMessage());
+            ex.printStackTrace(printer);
+        }
+    }
+
+    private void playLeague(String leagueId, String title, Random random) {
+        List<TeamDetails> teams = ejbRequest.getTeamsOfLeague(leagueId);
+
+        //meciurile
+        printer.println("Matches in " + title + ":");
+        for (int i = 0; i < teams.size(); i++) {
+            for (int j = i + 1; j < teams.size(); j++) {
+                int homeScore = random.nextInt(6);
+                int awayScore = random.nextInt(6);
+                ejbRequest.createGame(teams.get(i).getId(), teams.get(j).getId(), homeScore, awayScore);
+
+                TeamDetails teamA = ejbRequest.getTeam(teams.get(i).getId());
+                TeamDetails teamB = ejbRequest.getTeam(teams.get(j).getId());
+                printer.println("\"" + teamA.getName() + "\":" + teamA.getPoints()
+                        + " - \"" + teamB.getName() + "\":" + teamB.getPoints()
+                        + " - match:" + homeScore + "-" + awayScore);
+            }
+        }
+        printer.println();
+
+        //clasamentul
+        printer.println("List all teams in " + title + " standings: ");
+        List<TeamDetails> standings = ejbRequest.getTeamsOfLeague(leagueId);
+        standings.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
+        printDetailsList(standings);
+
+        //bonusuri(salarii marite)
+        if (leagueId.equals("L7")) {
+            ejbRequest.rewardTopThreeTeams(leagueId);
+        } else {
+            ejbRequest.processLeagueStandingsRewards(leagueId);
+        }
+
+        //liga, loc, echipă, jucător, salariu
+        printFormattedStandings(leagueId);
+
+        //echipele rămase
+        if (!leagueId.equals("L7")) {
+            printer.println("Remaining teams in " + title + " for next tournament: ");
+            List<TeamDetails> remaining = ejbRequest.getTeamsOfLeague(leagueId);
+            remaining.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
+            printDetailsList(remaining);
+        }
+
+        //jucătorii cu salariile actualizate
+        printer.println("List all players in " + title + " (with updated salaries): ");
+        printDetailsList(ejbRequest.getPlayersByLeagueId(leagueId));
+    }
+
     private void removeInfo() {
         try {
             printer.println("Removing team T6. ");
@@ -313,6 +411,23 @@ public class MainServlet extends HttpServlet {
     private void printDetailsList(List list) {
         for (Object details : list) {
             printer.println(details.toString());
+        }
+        printer.println();
+    }
+
+    private void printFormattedStandings(String leagueId) {
+        LeagueDetails league = ejbRequest.getLeague(leagueId);
+        List<TeamDetails> standings = ejbRequest.getTeamsOfLeague(leagueId);
+        standings.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
+
+        int place = 1;
+        for (TeamDetails team : standings) {
+            for (PlayerDetails player : ejbRequest.getPlayersOfTeam(team.getId())) {
+                printer.println("\"" + league.getName() + "\", place " + place
+                        + ", \"" + team.getName() + "\", "
+                        + player.getName() + " - " + player.getSalary());
+            }
+            place++;
         }
         printer.println();
     }
