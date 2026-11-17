@@ -67,9 +67,9 @@ public interface Request {
 
     void clearAllEntities();
 
-    void processLeagueStandingsRewards(String leagueId);
-
     void moveTeamsToLeague(String sourceLeagueId, String targetLeagueId);
 
     void rewardTopThreeTeams(String leagueId);
+
+    void removeLastTeam(String leagueId);
 }

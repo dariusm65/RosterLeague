@@ -369,18 +369,16 @@ public class MainServlet extends HttpServlet {
         standings.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
         printDetailsList(standings);
 
-        //bonusuri(salarii marite)
-        if (leagueId.equals("L7")) {
-            ejbRequest.rewardTopThreeTeams(leagueId);
-        } else {
-            ejbRequest.processLeagueStandingsRewards(leagueId);
-        }
+        //bonusuri (salarii marite)
+        ejbRequest.rewardTopThreeTeams(leagueId);
 
         //liga, loc, echipă, jucător, salariu
         printFormattedStandings(leagueId);
 
-        //echipele rămase
+        //eliminarea ultimei echipe + echipele rămase
         if (!leagueId.equals("L7")) {
+            ejbRequest.removeLastTeam(leagueId);
+
             printer.println("Remaining teams in " + title + " for next tournament: ");
             List<TeamDetails> remaining = ejbRequest.getTeamsOfLeague(leagueId);
             remaining.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));

@@ -552,41 +552,6 @@ public class RequestBean implements Request, Serializable {
     }
 
     @Override
-    public void processLeagueStandingsRewards(String leagueId) {
-        logger.info("processLeagueStandingsRewards");
-        try {
-            League league = em.find(League.class, leagueId);
-            if (league == null) return;
-
-            //sortare echipe descrescător după puncte
-            List<TeamDetails> standings = getTeamsOfLeague(leagueId);
-            standings.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
-
-            double[] bonuses = {30000.0, 20000.0, 10000.0};
-
-            for (int i = 0; i < Math.min(3, standings.size()); i++) {
-                Team team = em.find(Team.class, standings.get(i).getId());
-                if (team != null && team.getPlayers() != null) {
-                    for (Player player : team.getPlayers()) {
-                        player.setSalary(player.getSalary() + bonuses[i]);
-                    }
-                }
-            }
-
-            //ultima echipa eliminată
-            if (!standings.isEmpty()) {
-                Team lastTeam = em.find(Team.class, standings.get(standings.size() - 1).getId());
-                if (lastTeam != null) {
-                    league.dropTeam(lastTeam);
-                    lastTeam.setLeague(null);
-                }
-            }
-        } catch (Exception ex) {
-            throw new EJBException(ex);
-        }
-    }
-
-    @Override
     public void moveTeamsToLeague(String sourceLeagueId, String targetLeagueId) {
         logger.info("moveTeamsToLeague");
         try {
@@ -622,6 +587,27 @@ public class RequestBean implements Request, Serializable {
                         player.setSalary(player.getSalary() + bonuses[i]);
                     }
                 }
+            }
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+    }
+
+    @Override
+    public void removeLastTeam(String leagueId) {
+        logger.info("removeLastTeam");
+        try {
+            League league = em.find(League.class, leagueId);
+            if (league == null) return;
+
+            List<TeamDetails> standings = getTeamsOfLeague(leagueId);
+            if (standings.isEmpty()) return;
+            standings.sort((t1, t2) -> Integer.compare(t2.getPoints(), t1.getPoints()));
+
+            Team lastTeam = em.find(Team.class, standings.get(standings.size() - 1).getId());
+            if (lastTeam != null) {
+                league.dropTeam(lastTeam);
+                lastTeam.setLeague(null);
             }
         } catch (Exception ex) {
             throw new EJBException(ex);
